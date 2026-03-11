@@ -12,27 +12,37 @@ Built with **FastAPI + Groq (Llama 3) + React** and a strict **tool-calling arch
 User Input → Agent Pipeline
                 ├── 📡 tool_signal_harvester    (NewsAPI + Google News)
                 ├── 🔬 tool_research_analyst     (Groq/Llama 3 analysis)
-                └── 📧 tool_outreach_sender      (Gmail SMTP / SendGrid)
+                └── 📧 tool_outreach_sender      (Resend API / Gmail SMTP)
 ```
 
 ---
 
 ## 🔑 API Keys Required
 
-| Key | Source | Purpose |
-|-----|--------|---------|
-| `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) | LLM calls (Llama 3) |
-| `NEWS_API_KEY` | [newsapi.org](https://newsapi.org) | Real company signals |
-| `SMTP_EMAIL` | Your Gmail address | Email sending |
-| `SMTP_APP_PASSWORD` | Gmail App Password | Email authentication |
+| Key | Source | Purpose | Free? |
+|-----|--------|---------|-------|
+| `GROQ_API_KEY` | [console.groq.com](https://console.groq.com) | LLM (Llama 3) | ✅ |
+| `NEWS_API_KEY` | [newsapi.org](https://newsapi.org) | Company signals | ✅ |
+| `RESEND_API_KEY` | [resend.com](https://resend.com) | Email (deployed) | ✅ 100/day |
+| `SMTP_EMAIL` | Your Gmail | Email (local dev) | ✅ |
+| `SMTP_APP_PASSWORD` | Gmail App Password | Email auth (local) | ✅ |
 
-> **Gmail App Password Setup:** Gmail Settings → 2-Step Verification → App Passwords → Generate
+### 📧 Email Setup
+
+**Local Development:**
+- Use **Gmail SMTP** — works perfectly via port 587
+- Gmail Settings → 2-Step Verification ON → App Passwords → Generate 16-char code
+
+**Deployed on Render:**
+- ⚠️ **Gmail SMTP does NOT work** on Render (port 587 is blocked by Render's free tier)
+- Use **Resend API** instead — sign up at [resend.com](https://resend.com), get free API key
+- Resend sends emails via HTTPS (no port restrictions)
 
 ---
 
 ## 🚀 Quick Start
 
-### 1. Clone & Setup Backend
+### 1. Setup Backend
 
 ```bash
 cd backend
@@ -45,8 +55,8 @@ cp .env.example .env
 
 ```bash
 cd backend
-uvicorn main:app --reload
-# API runs at http://localhost:8000
+python -m uvicorn main:app --reload
+# API at http://localhost:8000
 ```
 
 ### 3. Run Frontend
@@ -55,22 +65,23 @@ uvicorn main:app --reload
 cd frontend
 npm install
 npm run dev
-# UI runs at http://localhost:5173
+# UI at http://localhost:5173
 ```
 
 ### 4. Use the Dashboard
 
 1. Enter your **ICP** (what you sell)
-2. Enter the **target company** name
-3. Enter the **candidate email**
-4. Click **"Run FireReach Agent"**
+2. Enter the **Target Company** name
+3. Enter the **Candidate Email**
+4. Enter the **Recipient Name** (for personalized greeting)
+5. Click **"🚀 Run FireReach Agent"**
 
 ---
 
 ## 📁 Project Structure
 
 ```
-fire-reach/
+RabbitFinal/
 ├── backend/
 │   ├── main.py                 # FastAPI app + /run-agent endpoint
 │   ├── agent.py                # Agentic pipeline + tool schemas
@@ -95,14 +106,26 @@ fire-reach/
 
 ## 🌐 Deployment
 
-### Backend (Render)
-- Runtime: Python 3.11+
-- Build: `pip install -r requirements.txt`
-- Start: `uvicorn main:app --host 0.0.0.0 --port $PORT`
-- Set env vars in Render dashboard
+### Backend → Render.com
 
-### Frontend (Vercel)
-- Framework: Vite
-- Build: `npm run build`
-- Output: `dist/`
-- Set `VITE_API_URL` env var to your Render backend URL
+| Setting | Value |
+|---------|-------|
+| Root Directory | `backend` |
+| Runtime | Python 3.11+ |
+| Build Command | `pip install -r requirements.txt` |
+| Start Command | `uvicorn main:app --host 0.0.0.0 --port $PORT` |
+
+**Environment Variables:** `GROQ_API_KEY`, `NEWS_API_KEY`, `RESEND_API_KEY`
+
+> ⚠️ **Important:** Render blocks SMTP port 587 on free tier. Gmail SMTP will NOT work on Render. Use `RESEND_API_KEY` for email delivery on Render. Gmail SMTP works only for local development.
+
+### Frontend → Vercel.com
+
+| Setting | Value |
+|---------|-------|
+| Root Directory | `frontend` |
+| Framework | Vite |
+| Build Command | `npm run build` |
+| Output Directory | `dist` |
+
+**Environment Variable:** `VITE_API_URL` = your Render backend URL

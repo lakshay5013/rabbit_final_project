@@ -100,41 +100,75 @@ Do NOT add any other text or explanations."""
     send_method = "none"
     error_message = ""
 
-    # Method 1: Gmail SMTP (Recommended)
-    smtp_email = os.getenv("SMTP_EMAIL", "")
-    smtp_password = os.getenv("SMTP_APP_PASSWORD", "")
+    # Method 1: Resend API (HTTP-based — works on Render/cloud)
+    resend_key = os.getenv("RESEND_API_KEY", "")
+    resend_from = os.getenv("RESEND_FROM_EMAIL", "FireReach <onboarding@resend.dev>")
 
-    if smtp_email and smtp_password:
-        print(f"[OutreachSender] Attempting Gmail SMTP with {smtp_email}...")
+    if resend_key:
+        print(f"[OutreachSender] Attempting Resend API...")
         try:
-            msg = MIMEMultipart()
-            msg["From"] = smtp_email
-            msg["To"] = recipient_email
-            msg["Subject"] = subject
-            msg.attach(MIMEText(body, "plain"))
-
-            with smtplib.SMTP("smtp.gmail.com", 587) as server:
-                server.set_debuglevel(0)
-                server.ehlo()
-                server.starttls()
-                server.ehlo()
-                server.login(smtp_email, smtp_password)
-                server.sendmail(smtp_email, recipient_email, msg.as_string())
-
-            email_sent = True
-            send_method = "gmail_smtp"
-            print(f"[OutreachSender] ✅ Email sent via Gmail SMTP to {recipient_email}")
-        except smtplib.SMTPAuthenticationError as e:
-            error_message = f"Gmail authentication failed. Check SMTP_EMAIL and SMTP_APP_PASSWORD. Error: {e}"
-            print(f"[OutreachSender] ❌ {error_message}")
-        except smtplib.SMTPException as e:
-            error_message = f"Gmail SMTP error: {e}"
-            print(f"[OutreachSender] ❌ {error_message}")
+            import httpx
+            resp = httpx.post(
+                "https://api.resend.com/emails",
+                headers={
+                    "Authorization": f"Bearer {resend_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "from": resend_from,
+                    "to": [recipient_email],
+                    "subject": subject,
+                    "text": body,
+                },
+                timeout=15,
+            )
+            if resp.status_code in (200, 201):
+                email_sent = True
+                send_method = "resend"
+                print(f"[OutreachSender] ✅ Email sent via Resend to {recipient_email}")
+            else:
+                error_message = f"Resend API error: {resp.status_code} - {resp.text}"
+                print(f"[OutreachSender] ❌ {error_message}")
         except Exception as e:
-            error_message = f"Gmail connection error: {type(e).__name__}: {e}"
+            error_message = f"Resend connection error: {type(e).__name__}: {e}"
             print(f"[OutreachSender] ❌ {error_message}")
-    else:
-        print(f"[OutreachSender] ⚠️ Gmail SMTP not configured (SMTP_EMAIL={bool(smtp_email)}, SMTP_APP_PASSWORD={bool(smtp_password)})")
+
+    # Method 2: Gmail SMTP (works locally, blocked on most cloud platforms)
+    if not email_sent:
+        smtp_email = os.getenv("SMTP_EMAIL", "")
+        smtp_password = os.getenv("SMTP_APP_PASSWORD", "")
+
+        if smtp_email and smtp_password:
+            print(f"[OutreachSender] Attempting Gmail SMTP with {smtp_email}...")
+            try:
+                msg = MIMEMultipart()
+                msg["From"] = smtp_email
+                msg["To"] = recipient_email
+                msg["Subject"] = subject
+                msg.attach(MIMEText(body, "plain"))
+
+                with smtplib.SMTP("smtp.gmail.com", 587) as server:
+                    server.set_debuglevel(0)
+                    server.ehlo()
+                    server.starttls()
+                    server.ehlo()
+                    server.login(smtp_email, smtp_password)
+                    server.sendmail(smtp_email, recipient_email, msg.as_string())
+
+                email_sent = True
+                send_method = "gmail_smtp"
+                print(f"[OutreachSender] ✅ Email sent via Gmail SMTP to {recipient_email}")
+            except smtplib.SMTPAuthenticationError as e:
+                error_message = f"Gmail authentication failed. Check SMTP_EMAIL and SMTP_APP_PASSWORD. Error: {e}"
+                print(f"[OutreachSender] ❌ {error_message}")
+            except smtplib.SMTPException as e:
+                error_message = f"Gmail SMTP error: {e}"
+                print(f"[OutreachSender] ❌ {error_message}")
+            except Exception as e:
+                error_message = f"Gmail connection error: {type(e).__name__}: {e}"
+                print(f"[OutreachSender] ❌ {error_message}")
+        else:
+            print(f"[OutreachSender] ⚠️ Gmail SMTP not configured")
 
     # Method 2: SendGrid (Fallback)
     if not email_sent:

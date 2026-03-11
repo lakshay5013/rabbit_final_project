@@ -1,92 +1,92 @@
 # 📘 FireReach – Technical Documentation
 
+---
+
 ## 1. Agent Logic Flow
 
 The FireReach agent follows a **strict sequential pipeline** — each tool's output feeds into the next.
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                    USER INPUT                                │
-│  { icp, company, email }                                     │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 1: tool_signal_harvester                               │
-│  ─────────────────────────────                               │
-│  Input:  company name                                        │
-│  Action: Query NewsAPI + Google News RSS                     │
-│  Output: { company, signals[], sources[] }                   │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 2: tool_research_analyst                               │
-│  ─────────────────────────────                               │
-│  Input:  company, signals[], icp                             │
-│  Action: LLM generates strategic Account Brief               │
-│  Output: { account_brief }                                   │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│  STEP 3: tool_outreach_automated_sender                      │
-│  ──────────────────────────────────────                      │
-│  Input:  company, signals[], account_brief, email, icp       │
-│  Action: LLM generates email → sends via SMTP/SendGrid      │
-│  Output: { email_sent, subject, body }                       │
-└──────────────────┬──────────────────────────────────────────┘
-                   │
-                   ▼
-┌─────────────────────────────────────────────────────────────┐
-│  FINAL RESPONSE                                              │
-│  { signals, account_brief, email_sent, email_subject,        │
-│    email_body }                                              │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────┐
+│              USER INPUT                           │
+│  { icp, company, email, recipient_name }          │
+└─────────────────┬────────────────────────────────┘
+                  │
+                  ▼
+┌──────────────────────────────────────────────────┐
+│  STEP 1: tool_signal_harvester                    │
+│                                                   │
+│  Input:  company name                             │
+│  Action: Query NewsAPI + Google News RSS          │
+│  Output: { company, signals[], sources[] }        │
+└─────────────────┬────────────────────────────────┘
+                  │
+                  ▼
+┌──────────────────────────────────────────────────┐
+│  STEP 2: tool_research_analyst                    │
+│                                                   │
+│  Input:  company, signals[], icp                  │
+│  Action: LLM generates strategic Account Brief    │
+│  Output: { account_brief }                        │
+└─────────────────┬────────────────────────────────┘
+                  │
+                  ▼
+┌──────────────────────────────────────────────────┐
+│  STEP 3: tool_outreach_automated_sender           │
+│                                                   │
+│  Input:  company, signals[], account_brief,       │
+│          email, recipient_name, icp               │
+│  Action: LLM generates email → sends via API      │
+│  Output: { email_sent, subject, body }            │
+└─────────────────┬────────────────────────────────┘
+                  │
+                  ▼
+┌──────────────────────────────────────────────────┐
+│  FINAL RESPONSE                                   │
+│  { signals, account_brief, email_sent,            │
+│    email_subject, email_body }                    │
+└──────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## 2. Tool Schemas
 
-### tool_signal_harvester
+### Tool 1: tool_signal_harvester
+
+**Purpose:** Fetch real-time signals about a target company.
 
 ```json
 {
   "name": "tool_signal_harvester",
-  "description": "Fetch real-time signals about a target company including funding rounds, leadership changes, hiring trends, tech stack signals, product launches, and competitive movements.",
   "parameters": {
-    "type": "object",
     "properties": {
-      "company": {
-        "type": "string",
-        "description": "The target company name to research"
-      }
+      "company": { "type": "string", "description": "Target company name" }
     },
     "required": ["company"]
   }
 }
 ```
 
-**Response Schema:**
+**Returns:**
 ```json
 {
-  "company": "string",
-  "signals": ["string"],
-  "sources": ["string"]
+  "company": "Ramp",
+  "signals": ["💰 Funding: Ramp raises $200M Series E..."],
+  "sources": ["TechCrunch", "Forbes"]
 }
 ```
 
 ---
 
-### tool_research_analyst
+### Tool 2: tool_research_analyst
+
+**Purpose:** Generate a strategic Account Brief from signals + ICP.
 
 ```json
 {
   "name": "tool_research_analyst",
-  "description": "Analyze captured signals against the ICP to generate a two-paragraph Account Brief.",
   "parameters": {
-    "type": "object",
     "properties": {
       "company": { "type": "string" },
       "signals": { "type": "array", "items": { "type": "string" } },
@@ -97,41 +97,42 @@ The FireReach agent follows a **strict sequential pipeline** — each tool's out
 }
 ```
 
-**Response Schema:**
+**Returns:**
 ```json
 {
-  "account_brief": "string (two paragraphs)"
+  "account_brief": "Two paragraphs: growth signals + ICP alignment"
 }
 ```
 
 ---
 
-### tool_outreach_automated_sender
+### Tool 3: tool_outreach_automated_sender
+
+**Purpose:** Generate and send a hyper-personalized outreach email.
 
 ```json
 {
   "name": "tool_outreach_automated_sender",
-  "description": "Generate and send a hyper-personalized outreach email referencing captured signals.",
   "parameters": {
-    "type": "object",
     "properties": {
       "company": { "type": "string" },
       "signals": { "type": "array", "items": { "type": "string" } },
       "account_brief": { "type": "string" },
       "recipient_email": { "type": "string" },
+      "recipient_name": { "type": "string" },
       "icp": { "type": "string" }
     },
-    "required": ["company", "signals", "account_brief", "recipient_email", "icp"]
+    "required": ["company", "signals", "account_brief", "recipient_email", "recipient_name", "icp"]
   }
 }
 ```
 
-**Response Schema:**
+**Returns:**
 ```json
 {
   "email_sent": true,
-  "subject": "string",
-  "body": "string"
+  "subject": "Congrats on Ramp's recent growth 🚀",
+  "body": "Hi Alex, I noticed Ramp recently..."
 }
 ```
 
@@ -142,22 +143,20 @@ The FireReach agent follows a **strict sequential pipeline** — each tool's out
 ```
 You are FireReach, an autonomous outreach intelligence agent.
 
-Your mission is to help sales teams send hyper-personalized outreach emails by:
-1. Capturing real-time signals about target companies
-2. Analyzing those signals to build strategic account briefs
-3. Composing and sending compelling outreach emails
+Your mission:
+1. Capture real-time signals about target companies
+2. Analyze signals to build strategic account briefs
+3. Compose and send compelling outreach emails
 
-You have access to exactly THREE tools that you MUST call sequentially:
-
-STEP 1 — tool_signal_harvester
-STEP 2 — tool_research_analyst
-STEP 3 — tool_outreach_automated_sender
+THREE tools, called SEQUENTIALLY:
+  STEP 1 → tool_signal_harvester
+  STEP 2 → tool_research_analyst
+  STEP 3 → tool_outreach_automated_sender
 
 RULES:
-- Call tools in order: signal_harvester → research_analyst → outreach_sender
 - NEVER fabricate or hallucinate signals
-- Every email MUST reference specific signals from Step 1
-- Keep the email concise, warm, and professional
+- Every email MUST reference specific signals
+- Keep emails concise, warm, and professional
 ```
 
 ---
@@ -172,7 +171,8 @@ curl -X POST http://localhost:8000/run-agent \
   -d '{
     "icp": "We sell high-end cybersecurity training to Series B+ startups",
     "company": "Ramp",
-    "email": "alex@ramp.com"
+    "email": "alex@ramp.com",
+    "recipient_name": "Alex"
   }'
 ```
 
@@ -181,31 +181,60 @@ curl -X POST http://localhost:8000/run-agent \
 ```json
 {
   "signals": [
-    "💰 Funding: Ramp raises $150M Series D at $7.65B valuation",
-    "👥 Hiring: Ramp hiring 12 new backend engineers",
-    "👤 Leadership: Ramp appoints new CTO from Stripe",
-    "📈 Growth: Ramp expands enterprise customer base by 40%"
+    "💰 Funding: Ramp Raises $200M Series E at $16B Valuation",
+    "👥 Hiring: Ramp Acquires Jolt AI to Help Engineers Build Faster",
+    "👤 Leadership: Ramp's CEO on building zero-touch finance",
+    "📈 Growth: Ramp expands enterprise customer base"
   ],
-  "sources": ["TechCrunch", "Forbes", "LinkedIn"],
-  "account_brief": "Ramp recently raised a $150M Series D round and is aggressively expanding their engineering team with 12 new backend hires. The appointment of a new CTO from Stripe signals a shift towards more sophisticated infrastructure and enterprise readiness.\n\nFor Series B+ startups scaling at this pace, structured cybersecurity training becomes critical. Rapid engineering team growth introduces security risks in internal tooling and developer workflows, creating an ideal alignment with our cybersecurity training platform.",
+  "sources": ["PR Newswire", "Crunchbase News", "McKinsey"],
+  "account_brief": "Ramp recently raised a $200M Series E and is scaling rapidly with the acquisition of Jolt AI. This growth introduces cybersecurity risks...\n\nOur cybersecurity training for Series B+ startups aligns perfectly with Ramp's current needs...",
   "email_sent": true,
   "email_subject": "Congrats on Ramp's recent growth 🚀",
-  "email_body": "Hi Alex,\n\nI noticed Ramp recently closed a significant funding round and is bringing on several new backend engineers. Teams scaling this quickly often face new security challenges in their developer workflows.\n\nWe help fast-growing engineering teams like yours build security-first habits without slowing down velocity. Would it make sense to chat for 15 minutes this week?\n\nBest,\nFireReach"
+  "email_body": "Hi Alex,\n\nI noticed Ramp recently raised $200M in Series E funding. Teams scaling this quickly often face new security challenges...\n\nWould it make sense to chat for 15 minutes this week?\n\nBest,\nFireReach"
 }
 ```
 
 ---
 
-## 5. API Endpoint
+## 5. API Endpoints
 
 ### POST /run-agent
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `icp` | string | Ideal Customer Profile |
-| `company` | string | Target company name |
-| `email` | string | Recipient email address |
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `icp` | string | ✅ | Ideal Customer Profile |
+| `company` | string | ✅ | Target company name |
+| `email` | string | ✅ | Recipient email address |
+| `recipient_name` | string | ❌ | Name for greeting (e.g. "Alex") |
 
 ### GET /health
 
-Returns service health and configuration status.
+Returns service health and API configuration status.
+
+---
+
+## 6. Email Delivery
+
+### How it works
+
+The system tries email delivery in this priority order:
+
+| Priority | Method | Type | Works On |
+|----------|--------|------|----------|
+| 1️⃣ | **Resend API** | HTTPS | ✅ Local + ✅ Render + ✅ Vercel |
+| 2️⃣ | **Gmail SMTP** | Port 587 | ✅ Local + ❌ Render (blocked) |
+| 3️⃣ | **SendGrid API** | HTTPS | ✅ Local + ✅ Render |
+| 4️⃣ | **Console Log** | — | Preview only (no send) |
+
+### ⚠️ Important: Render Deployment
+
+> **Render's free tier blocks SMTP port 587.** When deployed on Render, Gmail SMTP will fail with:
+> ```
+> OSError: [Errno 101] Network is unreachable
+> ```
+> **Solution:** Use **Resend API** (HTTP-based, free at [resend.com](https://resend.com)).
+> Add `RESEND_API_KEY` to Render environment variables.
+
+### Local Development
+
+Gmail SMTP works perfectly on local. Set `SMTP_EMAIL` and `SMTP_APP_PASSWORD` in `.env`.
