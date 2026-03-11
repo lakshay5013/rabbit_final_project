@@ -39,9 +39,10 @@ app.add_middleware(
 
 # ── Request / Response Models ───────────────────────────────────────────────
 class AgentRequest(BaseModel):
-    icp: str        # Ideal Customer Profile description
-    company: str    # Target company name
-    email: str      # Candidate email address
+    icp: str             # Ideal Customer Profile description
+    company: str         # Target company name
+    email: str           # Candidate email address
+    recipient_name: str = ""  # Recipient name for personalization
 
 
 class AgentResponse(BaseModel):
@@ -90,6 +91,7 @@ async def run_agent(request: AgentRequest):
             icp=request.icp,
             company=request.company,
             email=request.email,
+            recipient_name=request.recipient_name,
         )
         return AgentResponse(
             signals=result["signals"],

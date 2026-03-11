@@ -16,6 +16,7 @@ function App() {
   const [icp, setIcp] = useState("");
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
+  const [recipientName, setRecipientName] = useState("");
 
   // ─── UI State ──────────────────────────────────────────
   const [loading, setLoading] = useState(false);
@@ -43,7 +44,7 @@ function App() {
       const response = await fetch(`${API_URL}/run-agent`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ icp, company, email }),
+        body: JSON.stringify({ icp, company, email, recipient_name: recipientName }),
       });
 
       if (!response.ok) {
@@ -139,6 +140,20 @@ function App() {
               placeholder="e.g. alex@ramp.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+            />
+          </div>
+
+          <div className="field">
+            <label className="field__label" htmlFor="recipientName">
+              Recipient Name
+            </label>
+            <input
+              id="recipientName"
+              type="text"
+              className="field__input"
+              placeholder="e.g. Alex Johnson"
+              value={recipientName}
+              onChange={(e) => setRecipientName(e.target.value)}
             />
           </div>
         </div>

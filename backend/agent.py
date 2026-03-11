@@ -127,7 +127,7 @@ class FireReachAgent:
         except FileNotFoundError:
             return "You are FireReach, an autonomous outreach agent."
 
-    async def run(self, icp: str, company: str, email: str) -> dict:
+    async def run(self, icp: str, company: str, email: str, recipient_name: str = "") -> dict:
         """
         Execute the full agentic pipeline:
           Step 1: Signal Capture
@@ -184,6 +184,7 @@ class FireReachAgent:
             signals=signals,
             account_brief=account_brief,
             recipient_email=email,
+            recipient_name=recipient_name,
             icp=icp,
         )
 

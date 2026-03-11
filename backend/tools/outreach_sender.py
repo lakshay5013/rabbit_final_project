@@ -17,6 +17,7 @@ async def tool_outreach_automated_sender(
     signals: list[str],
     account_brief: str,
     recipient_email: str,
+    recipient_name: str,
     icp: str,
 ) -> dict:
     """
@@ -41,6 +42,7 @@ async def tool_outreach_automated_sender(
 
 TARGET COMPANY: {company}
 RECIPIENT EMAIL: {recipient_email}
+RECIPIENT NAME: {recipient_name if recipient_name else 'Unknown (use company team name instead, e.g. Hi ' + company + ' Team)'}
 
 SIGNALS WE CAPTURED:
 {signals_text}
@@ -53,11 +55,12 @@ OUR ICP / WHAT WE SELL:
 
 INSTRUCTIONS:
 1. Write a compelling subject line (include an emoji). Reference the company name.
-2. Start with a personalized opening that mentions a SPECIFIC signal.
-3. Connect their situation to our offering naturally.
-4. End with a soft CTA (not pushy).
-5. Keep it under 150 words.
-6. Tone: warm, human, conversational — NOT salesy.
+2. Address the recipient as "{recipient_name if recipient_name else company + ' Team'}" in the greeting.
+3. Start with a personalized opening that mentions a SPECIFIC signal.
+4. Connect their situation to our offering naturally.
+5. End with a soft CTA (not pushy).
+6. Keep it under 150 words.
+7. Tone: warm, human, conversational — NOT salesy.
 
 FORMAT YOUR RESPONSE EXACTLY LIKE THIS:
 SUBJECT: [your subject line]
